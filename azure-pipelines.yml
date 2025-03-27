@@ -1,0 +1,17 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+- script: |
+    python ./scripts/data_script.py > output.txt
+  displayName: 'Run data script'
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: 'output.txt'
+    artifactName: 'script-output'
