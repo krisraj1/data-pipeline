@@ -8,10 +8,31 @@ steps:
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.x'
+
 - script: |
-    python ./scripts/data_script.py > output.txt
+    python ./scripts/data_script.py > module-output.txt
   displayName: 'Run data script'
+  
 - task: PublishBuildArtifacts@1
   inputs:
-    pathToPublish: 'output.txt'
+    pathToPublish: 'module-output.txt'
     artifactName: 'script-output'
+
+- script: |
+    # Prepare files for Universal Packages
+    mkdir -p $(Build.ArtifactStagingDirectory)/artifact
+    cp module-output.txt $(Build.ArtifactStagingDirectory)/artifact/
+    echo "$(Build.BuildId)" > $(Build.ArtifactStagingDirectory)/artifact/version.txt
+    ls -lh $(Build.ArtifactStagingDirectory)/artifact/
+  displayName: 'Stage Files for Publishing'
+
+- task: UniversalPackages@0
+  displayName: 'Publish to Azure Artifacts Feed'
+  inputs:
+    command: 'publish'
+    publishDirectory: '$(Build.ArtifactStagingDirectory)/artifact'  # Directory with output.txt and version.txt
+    vstsFeedPublish: '$(System.TeamProject)/datapipeline-feed'     # Project-scoped feed: <project>/<feed>
+    vstsFeedPackagePublish: 'data-script-output'                    # Package name (lowercase)
+    versionOption: 'custom'                                         # Custom version
+    versionPublish: '1.0.$(Build.BuildId)'                          # Matches your current versioning
+    packagePublishDescription: 'Data script output artifact'        # Matches your description
